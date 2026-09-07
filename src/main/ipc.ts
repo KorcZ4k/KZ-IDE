@@ -5,6 +5,7 @@ import { git, gitDiff, gitStatus } from './git';
 import { loadWorkspaceState, saveWorkspaceState } from './workspace-state';
 import { loadSettings, saveSettings } from './settings';
 import { searchWorkspace } from './search';
+import type { KZSettings } from './settings';
 
 export function registerIpc() {
   ipcMain.handle('workspace:open', async () => {
@@ -27,5 +28,5 @@ export function registerIpc() {
   ipcMain.handle('git:run', (_event, cwd: string, args: string[]) => git(cwd, args));
   ipcMain.handle('search:workspace', (_event, root: string, query: string) => searchWorkspace(root, query));
   ipcMain.handle('settings:get', () => loadSettings());
-  ipcMain.handle('settings:save', (_event, patch) => saveSettings(patch));
+  ipcMain.handle('settings:save', (_event, patch: Partial<KZSettings>) => saveSettings(patch));
 }

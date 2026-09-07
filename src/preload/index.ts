@@ -15,6 +15,9 @@ const api: KZApi = {
     rename: (oldPath, newPath) => ipcRenderer.invoke('file:rename', oldPath, newPath)
   },
   terminal: { cwd: () => ipcRenderer.invoke('terminal:cwd'), run: (command, cwd) => ipcRenderer.invoke('terminal:run', command, cwd) },
-  git: { status: (cwd) => ipcRenderer.invoke('git:status', cwd), diff: (cwd, file) => ipcRenderer.invoke('git:diff', cwd, file), run: (cwd, args) => ipcRenderer.invoke('git:run', cwd, args) }
+  git: { status: (cwd) => ipcRenderer.invoke('git:status', cwd), diff: (cwd, file) => ipcRenderer.invoke('git:diff', cwd, file), run: (cwd, args) => ipcRenderer.invoke('git:run', cwd, args) },
+  search: { workspace: (root, query) => ipcRenderer.invoke('search:workspace', root, query) },
+  settings: { get: () => ipcRenderer.invoke('settings:get'), save: (patch) => ipcRenderer.invoke('settings:save', patch) }
 };
+
 contextBridge.exposeInMainWorld('kz', api);

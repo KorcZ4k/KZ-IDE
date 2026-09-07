@@ -2,46 +2,46 @@
 
 > Um IDE desktop leve, funcional, tecnológico, moderno e **autoral**.
 
-## Etapa 3 — Aprimoramento
+## Etapa 4 — Adaptação para escala
 
-A terceira etapa adiciona recursos profissionais sem abandonar a proposta de simplicidade e identidade própria.
+A quarta etapa prepara o núcleo do KZ-IDE para crescer sem perder leveza. O foco é persistência, estabilidade, isolamento e capacidade de evolução.
 
 ### Entregue
 
-- editor Monaco como núcleo de edição;
-- detecção de linguagem para várias linguagens comuns;
-- tema KZ Dark autoral;
-- Source Control com status Git;
-- identificação de branch e arquivos alterados;
-- execução segura de operações Git selecionadas;
-- Pull, Push, Status e Diff pelo painel;
-- Command Palette expandida;
-- busca rápida de arquivos;
-- terminal integrado conectado ao workspace;
-- indicador de alterações do Git na Activity Bar;
-- status bar com branch e estado do repositório;
-- API compartilhada preparada para evoluir para LSP e debugger.
+- persistência do último workspace;
+- lista de até 8 workspaces recentes;
+- restauração automática do workspace ao iniciar;
+- armazenamento de estado no diretório de dados do Electron;
+- separação clara entre renderer, preload e processo principal;
+- filesystem, terminal e Git isolados atrás do IPC;
+- CI no GitHub Actions para validar `npm install` + `npm run build` em cada push/PR para `main`;
+- estrutura preparada para indexação, cache e serviços especializados nas próximas evoluções;
+- manutenção da política Electron com `contextIsolation`, `nodeIntegration: false` e sandbox.
+
+### Estado persistente
+
+O KZ-IDE grava apenas informações operacionais do workspace: caminho atual e histórico recente. O arquivo fica no `userData` do Electron, sem depender de arquivos dentro do projeto.
+
+### CI
+
+O workflow `.github/workflows/ci.yml` usa Node 22, instala as dependências e executa o build. Isso cria uma barreira automática contra regressões de compilação antes de avançar para a Etapa 5.
 
 ### Arquitetura
 
 ```text
-Renderer
-   │
-   ▼
-Preload / contextBridge
-   │
-   ▼
-Electron IPC
-   ├── Filesystem
-   ├── Terminal
-   └── Git
+                 KZ-IDE
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+     Renderer               Electron Main
+        │                       │
+     Preload                    ├── Filesystem
+        │                       ├── Terminal
+        │                       ├── Git
+        │                       └── Workspace State
+        │
+        └─────── IPC seguro ────┘
 ```
-
-O frontend não recebe acesso direto ao Node. A comunicação continua passando pela API exposta pelo preload.
-
-### Filosofia da Etapa 3
-
-O KZ-IDE não deve ficar pesado apenas para acumular funcionalidades. Cada recurso deve justificar sua presença, permanecer modular e preservar a experiência autoral.
 
 ## Comandos
 
@@ -53,4 +53,4 @@ npm start
 
 ## Próxima etapa
 
-A Etapa 4 será dedicada a adaptação para escala: performance, isolamento de processos, persistência de workspace, indexação, cache, testes, observabilidade, segurança e empacotamento multiplataforma.
+A Etapa 5 será a consolidação do KZ-IDE: LSP real, autocomplete semântico, diagnósticos, debugger, extensões, configurações avançadas, pesquisa de conteúdo, refatoração, testes e uma UX capaz de competir diretamente com IDEs estabelecidos — sem abandonar a identidade autoral.

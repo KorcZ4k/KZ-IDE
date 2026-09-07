@@ -2,12 +2,16 @@ import { dialog, ipcMain } from 'electron';
 import { readTree, fileSystem } from './filesystem';
 import { defaultCwd, runCommand } from './terminal';
 import { git, gitDiff, gitStatus } from './git';
+import { loadWorkspaceState, saveWorkspaceState } from './workspace-state';
 
 export function registerIpc() {
   ipcMain.handle('workspace:open', async () => {
     const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
-    return result.canceled ? null : result.filePaths[0] ?? null;
+    if (result.canceled || !result.filePaths[0]) return null;
+    await saveWorkspaceState(result.filePaths[0]);
+    return result.filePaths[0];
   });
+  ipcMain.handle('workspace:last', () => loadWorkspaceState());
   ipcMain.handle('workspace:tree', (_event, root: string) => readTree(root));
   ipcMain.handle('file:read', (_event, filePath: string) => fileSystem.read(filePath));
   ipcMain.handle('file:write', (_event, filePath: string, content: string) => fileSystem.write(filePath, content));

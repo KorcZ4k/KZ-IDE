@@ -18,8 +18,13 @@ export type GitStatus = {
   files: { path: string; status: string }[];
 };
 
+export type WorkspaceState = {
+  workspace: string | null;
+  recent: string[];
+};
+
 export type KZApi = {
-  workspace: { open: () => Promise<string | null>; readTree: (root: string) => Promise<FileNode[]> };
+  workspace: { open: () => Promise<string | null>; last: () => Promise<WorkspaceState>; readTree: (root: string) => Promise<FileNode[]> };
   file: {
     read: (path: string) => Promise<string>;
     write: (path: string, content: string) => Promise<void>;

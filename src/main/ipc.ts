@@ -1,9 +1,10 @@
 import { dialog, ipcMain } from 'electron';
 import { readTree, fileSystem } from './filesystem';
 import { defaultCwd, runCommand } from './terminal';
+import { git, gitDiff, gitStatus } from './git';
 
 export function registerIpc() {
-  ipcMain.handle('workspace:open', async (event) => {
+  ipcMain.handle('workspace:open', async () => {
     const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
     return result.canceled ? null : result.filePaths[0] ?? null;
   });
@@ -15,4 +16,7 @@ export function registerIpc() {
   ipcMain.handle('file:rename', (_event, oldPath: string, newPath: string) => fileSystem.rename(oldPath, newPath));
   ipcMain.handle('terminal:cwd', () => defaultCwd());
   ipcMain.handle('terminal:run', (_event, command: string, cwd?: string) => runCommand(command, cwd));
+  ipcMain.handle('git:status', (_event, cwd: string) => gitStatus(cwd));
+  ipcMain.handle('git:diff', (_event, cwd: string, file?: string) => gitDiff(cwd, file));
+  ipcMain.handle('git:run', (_event, cwd: string, args: string[]) => git(cwd, args));
 }

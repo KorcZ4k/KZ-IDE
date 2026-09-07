@@ -3,6 +3,8 @@ import { readTree, fileSystem } from './filesystem';
 import { defaultCwd, runCommand } from './terminal';
 import { git, gitDiff, gitStatus } from './git';
 import { loadWorkspaceState, saveWorkspaceState } from './workspace-state';
+import { loadSettings, saveSettings } from './settings';
+import { searchWorkspace } from './search';
 
 export function registerIpc() {
   ipcMain.handle('workspace:open', async () => {
@@ -23,4 +25,7 @@ export function registerIpc() {
   ipcMain.handle('git:status', (_event, cwd: string) => gitStatus(cwd));
   ipcMain.handle('git:diff', (_event, cwd: string, file?: string) => gitDiff(cwd, file));
   ipcMain.handle('git:run', (_event, cwd: string, args: string[]) => git(cwd, args));
+  ipcMain.handle('search:workspace', (_event, root: string, query: string) => searchWorkspace(root, query));
+  ipcMain.handle('settings:get', () => loadSettings());
+  ipcMain.handle('settings:save', (_event, patch) => saveSettings(patch));
 }

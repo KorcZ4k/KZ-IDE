@@ -2,48 +2,46 @@
 
 > Um IDE desktop leve, funcional, tecnológico, moderno e **autoral**.
 
-## Etapa 2 — Funcionamento
+## Etapa 3 — Aprimoramento
 
-A segunda etapa transforma a fundação visual em um IDE desktop funcional para projetos reais.
+A terceira etapa adiciona recursos profissionais sem abandonar a proposta de simplicidade e identidade própria.
 
-### O que já funciona
+### Entregue
 
-- workspace real por seleção de pasta;
-- Explorer alimentado pelo filesystem;
-- navegação recursiva de diretórios;
-- abertura de arquivos reais;
-- abas com estado de arquivo;
-- indicador de alterações não salvas;
-- salvar com `Ctrl + S`;
-- editor Monaco com linguagem detectada pela extensão;
-- tema visual próprio do KZ-IDE;
-- criação de arquivo;
-- exclusão do arquivo ativo;
-- busca rápida de arquivos com `Ctrl + P`;
-- Command Palette com `Ctrl + Shift + P`;
-- terminal integrado com execução de comandos reais;
-- `Ctrl + \`` para abrir/fechar terminal;
-- ponte segura Electron ↔ renderer via `contextBridge` e IPC;
-- execução com `nodeIntegration: false` e `contextIsolation: true`;
-- build separado para Electron e renderer.
+- editor Monaco como núcleo de edição;
+- detecção de linguagem para várias linguagens comuns;
+- tema KZ Dark autoral;
+- Source Control com status Git;
+- identificação de branch e arquivos alterados;
+- execução segura de operações Git selecionadas;
+- Pull, Push, Status e Diff pelo painel;
+- Command Palette expandida;
+- busca rápida de arquivos;
+- terminal integrado conectado ao workspace;
+- indicador de alterações do Git na Activity Bar;
+- status bar com branch e estado do repositório;
+- API compartilhada preparada para evoluir para LSP e debugger.
 
-### Estrutura
+### Arquitetura
 
 ```text
-src/
-├── main/
-│   ├── main.ts        # Janela Electron
-│   ├── ipc.ts         # Handlers IPC
-│   ├── filesystem.ts  # Workspace e arquivos
-│   └── terminal.ts    # Execução de comandos
-├── preload/
-│   └── index.ts       # API segura exposta ao renderer
-├── renderer/
-│   ├── main.tsx       # Aplicação React
-│   └── styles.css     # Identidade visual
-└── shared/
-    └── api.ts         # Contratos compartilhados
+Renderer
+   │
+   ▼
+Preload / contextBridge
+   │
+   ▼
+Electron IPC
+   ├── Filesystem
+   ├── Terminal
+   └── Git
 ```
+
+O frontend não recebe acesso direto ao Node. A comunicação continua passando pela API exposta pelo preload.
+
+### Filosofia da Etapa 3
+
+O KZ-IDE não deve ficar pesado apenas para acumular funcionalidades. Cada recurso deve justificar sua presença, permanecer modular e preservar a experiência autoral.
 
 ## Comandos
 
@@ -53,16 +51,6 @@ npm run build
 npm start
 ```
 
-Durante o desenvolvimento, o renderer pode ser executado com `npm run dev` para iteração rápida da interface.
-
-## Princípios
-
-1. **Leve:** evitar complexidade e dependências desnecessárias.
-2. **Funcional:** cada recurso deve resolver um problema real.
-3. **Tecnológico:** arquitetura moderna e extensível.
-4. **Autoral:** identidade, UX e decisões próprias; inspiração não significa cópia.
-5. **Evolutivo:** cada etapa prepara a próxima sem descartar o núcleo anterior.
-
 ## Próxima etapa
 
-A Etapa 3 entra nos recursos profissionais: LSP, diagnósticos, autocomplete contextual, Git, debugger, configurações e arquitetura inicial de extensões.
+A Etapa 4 será dedicada a adaptação para escala: performance, isolamento de processos, persistência de workspace, indexação, cache, testes, observabilidade, segurança e empacotamento multiplataforma.

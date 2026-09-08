@@ -35,7 +35,6 @@ wss.on('connection',(ws,request)=>{
     const message=JSON.parse(raw.toString()); if(!message||typeof message.type!=='string')return;
     if(message.type==='kick'||message.type==='role'){if(peer.role!=='owner')return;const target=[...room.peers].find(p=>p.id===message.peerId);if(!target||target===peer)return;if(message.type==='kick'){target.ws.close(4000,'Removed by host');remove(target);}else if(message.role==='editor'||message.role==='viewer'){target.role=message.role;send(target.ws,{type:'role',role:target.role});broadcast(room,{type:'presence',payload:roster(room)});}return;}
     if(message.type==='edit'&&peer.role==='viewer')return;
-    if(message.type==='sync'&&peer.role==='owner')return;
     broadcast(room,message,ws);
   }catch{send(ws,{type:'error',message:'Malformed relay payload'});}});
   ws.on('close',()=>remove(peer)); ws.on('error',()=>remove(peer));

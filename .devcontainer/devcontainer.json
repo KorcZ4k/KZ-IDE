@@ -1,7 +1,7 @@
 {
   "name": "KZ-IDE",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
-  "postCreateCommand": "bash scripts/install-electron-linux-deps.sh",
+  "postCreateCommand": "npm install --no-audit --no-fund && bash scripts/install-electron-linux-deps.sh",
   "customizations": {
     "vscode": {
       "extensions": [

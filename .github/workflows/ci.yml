@@ -6,18 +6,33 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build
         run: npm run build
       - name: Unit tests
         run: node --test tests/*.test.mjs
+      - name: Verify Electron entrypoint
+        run: test -f dist/main/main.js && test -f dist/preload/index.js && test -f dist/renderer/index.html
+      - name: Package Linux AppImage
+        run: npm run package:linux
+      - name: Upload Linux application
+        uses: actions/upload-artifact@v4
+        with:
+          name: kz-ide-linux
+          path: release/*.AppImage
+          if-no-files-found: error
+          retention-days: 14

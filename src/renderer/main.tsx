@@ -138,7 +138,7 @@ function App() {
 function flatten(nodes: FileNode[]): FileNode[] { return nodes.flatMap(n => n.kind === 'folder' ? flatten(n.children ?? []) : [n]); }
 function findNode(nodes: FileNode[], path: string): FileNode | null { for (const n of nodes) { if (n.path === path) return n; if (n.kind === 'folder') { const found = findNode(n.children ?? [], path); if (found) return found; } } return null; }
 
-function FileTree({ nodes, onOpen, depth = 0 }: { nodes: FileNode[]; onOpen: (n: FileNode) => void; depth?: number }) { return <div>{nodes.map(n => <div key={n.path}><button className="tree-item" style={{ paddingLeft: `${10 + depth * 15}px` }} onClick={() => n.kind === 'file' && onOpen(n)}><span className="tree-icon">{n.kind === 'folder' ? '▸' : '•'}</span><span>{n.name}</span></button>{n.kind === 'folder' && <FileTree nodes={n.children ?? []} onOpen={onOpen} depth={depth + 1} />}</div>); }
+function FileTree({ nodes, onOpen, depth = 0 }: { nodes: FileNode[]; onOpen: (n: FileNode) => void; depth?: number }) { return <div>{nodes.map(n => <div key={n.path}><button className="tree-item" style={{ paddingLeft: `${10 + depth * 15}px` }} onClick={() => n.kind === 'file' && onOpen(n)}><span className="tree-icon">{n.kind === 'folder' ? '▸' : '•'}</span><span>{n.name}</span></button>{n.kind === 'folder' && <FileTree nodes={n.children ?? []} onOpen={onOpen} depth={depth + 1} />}</div>)}</div>; }
 
 function MonacoEditor({ file, settings, onChange, onNotice }: { file: OpenFile; settings: KZSettings; onChange: (content: string) => void; onNotice: (s: string) => void }) {
   const ref = useRef<HTMLDivElement>(null); const change = useRef(onChange); change.current = onChange;

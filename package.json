@@ -21,6 +21,7 @@
     "productName": "Aurora - Korczak IDE",
     "executableName": "Aurora-Korczak-IDE",
     "artifactName": "Aurora - Korczak IDE-${version}-${os}-${arch}.${ext}",
+    "directories": { "output": "release" },
     "icon": "build/Aurora-IDE.png",
     "files": ["dist/**/*"],
     "extraResources": [{ "from": "build/Aurora-IDE.png", "to": "Aurora-IDE.png" }],

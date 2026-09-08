@@ -7,12 +7,15 @@ export type UpdateStatus={state:'disabled'|'checking'|'available'|'not-available
 export type ProjectInfo={root:string;kind:string;packageManager?:string;testCommand?:string;runCommand?:string;debugCommand?:string};
 export type ToolResult={stdout:string;stderr:string;code:number|null};
 export type DevResult=ProjectInfo&{command?:string|null;result:ToolResult};
+export type DebugFrame={id:number;name:string;file:string;line:number;column:number};
+export type DebugVariable={name:string;value:string;type?:string};
+export type DebugSnapshot={state:'starting'|'paused'|'running'|'stopped'|'error';frames:DebugFrame[];variables:DebugVariable[];message?:string};
 export type KZApi={
  workspace:{open:()=>Promise<string|null>;last:()=>Promise<WorkspaceState>;readTree:(root:string)=>Promise<FileNode[]>};
  file:{read:(path:string)=>Promise<string>;write:(path:string,content:string)=>Promise<void>;create:(path:string,kind:'file'|'folder')=>Promise<void>;remove:(path:string)=>Promise<void>;rename:(oldPath:string,newPath:string)=>Promise<void>};
  terminal:{cwd:()=>Promise<string>;run:(command:string,cwd?:string)=>Promise<ToolResult>};
  git:{status:(cwd:string)=>Promise<GitStatus>;diff:(cwd:string,file?:string)=>Promise<string>;run:(cwd:string,args:string[])=>Promise<ToolResult>};
  search:{workspace:(root:string,query:string)=>Promise<SearchMatch[]>}; settings:{get:()=>Promise<KZSettings>;save:(patch:Partial<KZSettings>)=>Promise<KZSettings>};
- dev:{project:(root:string)=>Promise<ProjectInfo>;tests:(root:string,command?:string)=>Promise<DevResult>;run:(root:string,command?:string)=>Promise<DevResult>;debug:(root:string,command?:string)=>Promise<DevResult>;diagnostics:(root:string)=>Promise<Diagnostic[]>};
+ dev:{project:(root:string)=>Promise<ProjectInfo>;tests:(root:string,command?:string)=>Promise<DevResult>;run:(root:string,command?:string)=>Promise<DevResult>;debug:(root:string,command?:string)=>Promise<DevResult>;diagnostics:(root:string)=>Promise<Diagnostic[]>;debugger:{start:(root:string,command?:string)=>Promise<{ok:boolean;id?:string;message?:string}>;breakpoint:(id:string,file:string,line:number)=>Promise<boolean>;command:(id:string,command:'continue'|'pause'|'next'|'stepIn'|'stepOut'|'stop')=>Promise<boolean>;snapshot:(id:string)=>Promise<DebugSnapshot|null>;onEvent:(callback:(snapshot:DebugSnapshot)=>void)=>()=>void}};
  update:{status:()=>Promise<UpdateStatus>;check:()=>Promise<UpdateStatus>;download:()=>Promise<UpdateStatus>;install:()=>void;onStatus:(callback:(status:UpdateStatus)=>void)=>()=>void};
 };

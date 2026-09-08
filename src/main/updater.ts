@@ -33,34 +33,25 @@ export function setupAutoUpdater() {
   autoUpdater.on('checking-for-update', () => publish({ state: 'checking' }));
   autoUpdater.on('update-available', info => {
     publish({ state: 'available', version: info.version });
-    if (promptOpen) return;
-    promptOpen = true;
-    void dialog.showMessageBox({
-      type: 'info',
-      title: 'KZ-IDE — atualização disponível',
-      message: `A versão ${info.version} do KZ-IDE está disponível.`,
-      detail: 'Você pode baixar agora e continuar usando o aplicativo enquanto o download acontece.',
-      buttons: ['Baixar atualização', 'Agora não'],
-      defaultId: 0,
-      cancelId: 1
-    }).then(result => {
-      promptOpen = false;
-      if (result.response === 0) void downloadUpdate();
-    });
   });
   autoUpdater.on('update-not-available', () => publish({ state: 'not-available' }));
   autoUpdater.on('download-progress', progress => publish({ state: 'downloading', percent: progress.percent }));
   autoUpdater.on('update-downloaded', info => {
     publish({ state: 'downloaded', version: info.version });
+    if (promptOpen) return;
+    promptOpen = true;
     void dialog.showMessageBox({
       type: 'info',
-      title: 'KZ-IDE — atualização pronta',
+      title: 'Aurora — atualização pronta',
       message: `A versão ${info.version} foi baixada.`,
-      detail: 'Reinicie o KZ-IDE para aplicar a atualização.',
+      detail: 'A atualização será aplicada ao reiniciar o Aurora.',
       buttons: ['Reiniciar agora', 'Depois'],
       defaultId: 0,
       cancelId: 1
-    }).then(result => { if (result.response === 0) installUpdate(); });
+    }).then(result => {
+      promptOpen = false;
+      if (result.response === 0) installUpdate();
+    });
   });
   autoUpdater.on('error', error => publish({ state: 'error', message: error.message }));
 
@@ -71,15 +62,23 @@ export function setupAutoUpdater() {
 
 export async function checkForUpdates() {
   if (!updatesEnabled()) return status;
-  try { await autoUpdater.checkForUpdates(); }
-  catch (error) { publish({ state: 'error', message: error instanceof Error ? error.message : String(error) }); }
+  try {
+    publish({ state: 'checking' });
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    publish({ state: 'error', message: error instanceof Error ? error.message : String(error) });
+  }
   return status;
 }
 
 export async function downloadUpdate() {
   if (!updatesEnabled()) return status;
-  try { await autoUpdater.downloadUpdate(); }
-  catch (error) { publish({ state: 'error', message: error instanceof Error ? error.message : String(error) }); }
+  try {
+    publish({ state: 'downloading', percent: 0 });
+    await autoUpdater.downloadUpdate();
+  } catch (error) {
+    publish({ state: 'error', message: error instanceof Error ? error.message : String(error) });
+  }
   return status;
 }
 

@@ -16,11 +16,11 @@ export function registerIpc() {
   });
   ipcMain.handle('workspace:last', () => loadWorkspaceState());
   ipcMain.handle('workspace:tree', (_event, root: string) => readTree(root));
-  ipcMain.handle('file:read', (_event, filePath: string) => fileSystem.read(filePath));
-  ipcMain.handle('file:write', (_event, filePath: string, content: string) => fileSystem.write(filePath, content));
-  ipcMain.handle('file:create', (_event, filePath: string, kind: 'file' | 'folder') => fileSystem.create(filePath, kind));
-  ipcMain.handle('file:remove', (_event, filePath: string) => fileSystem.remove(filePath));
-  ipcMain.handle('file:rename', (_event, oldPath: string, newPath: string) => fileSystem.rename(oldPath, newPath));
+  ipcMain.handle('file:read', (_event, root: string, filePath: string) => fileSystem.read(root, filePath));
+  ipcMain.handle('file:write', (_event, root: string, filePath: string, content: string) => fileSystem.write(root, filePath, content));
+  ipcMain.handle('file:create', (_event, root: string, filePath: string, kind: 'file' | 'folder') => fileSystem.create(root, filePath, kind));
+  ipcMain.handle('file:remove', (_event, root: string, filePath: string) => fileSystem.remove(root, filePath));
+  ipcMain.handle('file:rename', (_event, root: string, oldPath: string, newPath: string) => fileSystem.rename(root, oldPath, newPath));
   ipcMain.handle('terminal:cwd', () => defaultCwd());
   ipcMain.handle('terminal:run', (_event, command: string, cwd?: string) => runCommand(command, cwd));
   ipcMain.handle('git:status', (_event, cwd: string) => gitStatus(cwd));

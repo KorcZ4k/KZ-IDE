@@ -2,87 +2,83 @@
 
 > Um IDE desktop leve, funcional, tecnológico, moderno e **autoral**.
 
-## Etapa 5 — Mesmo nível para VS Code
+## Etapa 5.1 — Hardening profissional
 
-A quinta etapa consolida o KZ-IDE como uma IDE desktop de verdade. O objetivo não é copiar o VS Code, mas atingir o mesmo patamar de fluxo diário mantendo uma interface própria, compacta e direta.
+A base da Etapa 5 foi endurecida para tornar o projeto mais confiável antes de avançar para recursos pesados de IDE.
 
 ### Entregue
 
-- editor Monaco com preferências persistentes de fonte, minimap e word wrap;
-- Command Palette ampliada para operações centrais;
-- busca rápida de arquivos com `Ctrl/Cmd + P`;
-- busca de conteúdo em todo o workspace com `Ctrl/Cmd + F`;
-- resultados de busca com arquivo e linha para navegação rápida;
-- diagnósticos locais no editor com markers Monaco;
-- painel Problems integrado ao terminal;
-- autocomplete contextual básico por linguagem para TypeScript, JavaScript, Python, Rust, Go, Java, C/C++;
-- Source Control Git mantido como serviço isolado;
-- terminal integrado e fluxo Run/Debug preparado para evolução;
-- configurações persistentes no perfil do KZ-IDE (`userData` do Electron);
-- IPC tipado entre renderer, preload e processo principal;
-- arquitetura de serviços separada para workspace, busca e configurações;
-- versão do produto atualizada para `0.5.0`.
+- filesystem protegido contra operações fora do workspace;
+- bloqueio de exclusão da raiz do workspace;
+- limite de 10 MB para leitura de arquivos no editor;
+- criação de arquivos sem sobrescrita acidental;
+- validação e normalização das configurações persistidas;
+- ferramenta de segurança de paths isolada e testável;
+- testes automatizados de segurança do workspace;
+- CI com instalação, build e testes;
+- dependências diretas com versões fixadas, evitando `latest` imprevisível;
+- IPC de filesystem mantém compatibilidade com o renderer e resolve o workspace autorizado no processo principal.
 
-### O que mudou na arquitetura
+### Segurança do filesystem
+
+Operações de leitura, escrita, criação, remoção e rename passam por uma validação de caminho no processo principal. Caminhos absolutos ou relativos que escapem do workspace são rejeitados.
+
+O renderer continua sem acesso direto ao Node. O modelo permanece:
 
 ```text
-                         KZ-IDE 0.5
-                              │
-             ┌────────────────┼────────────────┐
-             │                │                │
-          Renderer          Preload        Electron Main
-             │                │                │
-      ┌──────┼──────┐         │       ┌────────┼─────────┐
-      │      │      │         │       │        │         │
-   Monaco  Panels  UX    contextBridge Filesystem Git  Services
-      │      │      │         │       │        │         │
-      └──────┴──────┴─────────┴───────┴────────┴─────────┘
-                         IPC seguro
-
-Services:
-  • Workspace State
-  • Settings
-  • Content Search
-  • Terminal
-  • Git
+Renderer
+   │
+   ▼
+Preload / contextBridge
+   │
+   ▼
+Electron Main
+   │
+   ├── Workspace boundary
+   ├── Filesystem
+   ├── Git
+   ├── Terminal
+   └── Services
 ```
 
-### Configurações
+### Qualidade
 
-As preferências ficam fora do projeto, no perfil de dados do Electron. O usuário pode controlar:
+O pipeline executa:
 
-- tamanho da fonte;
+```bash
+npm install --no-audit --no-fund
+npm run build
+node --test tests/*.test.mjs
+```
+
+O projeto ainda não afirma paridade funcional total com VS Code. Os próximos saltos de qualidade são LSP real, diagnostics semânticos, Go to Definition/Hover/Rename, DAP/debugger, extension host, indexação incremental e packaging multiplataforma.
+
+## Configurações
+
+As preferências ficam no perfil de dados do Electron e são normalizadas ao carregar/salvar:
+
+- tamanho da fonte: 8–32;
 - minimap;
 - quebra de linha;
-- auto save (preferência persistida para a próxima evolução);
-- confirmação antes de excluir arquivos.
+- auto save;
+- confirmação antes de excluir.
 
 Atalho: `Ctrl/Cmd + ,`.
-
-### Pesquisa e diagnóstico
-
-A busca de conteúdo percorre os formatos de código e documentação mais comuns, ignora `.git`, `node_modules`, `dist` e `build`, e limita resultados para manter a interface responsiva.
-
-Os diagnósticos atuais são deliberadamente leves: o editor detecta problemas estruturais simples, como delimitadores desbalanceados, e marca `TODO` como aviso. A arquitetura fica pronta para substituir essa camada por LSP real sem acoplar o renderer a processos externos.
-
-### Segurança e evolução
-
-O processo de UI continua sem acesso direto ao Node: `contextIsolation` permanece ativo, `nodeIntegration` continua desativado e o sandbox do renderer é preservado. Recursos do sistema passam pelo preload e por handlers IPC tipados.
-
-A próxima evolução natural é conectar servidores LSP reais, DAP/debuggers, extensões em sandbox, refatoração semântica e testes automatizados de integração.
 
 ## Comandos
 
 ```bash
 npm install
 npm run build
+npm test
 npm start
 ```
 
-## Roadmap concluído
+## Roadmap
 
 1. **Rascunho** — identidade, arquitetura e interface inicial.
 2. **Funcionamento** — filesystem real, tabs, Monaco, terminal e atalhos.
 3. **Aprimoramento** — Git, Source Control e base profissional.
 4. **Adaptação para escala** — persistência, recentes e CI.
 5. **Mesmo nível para VS Code** — serviços, busca, diagnósticos, autocomplete e configurações persistentes.
+5.1. **Hardening profissional** — segurança de filesystem, settings robustos, testes e CI.

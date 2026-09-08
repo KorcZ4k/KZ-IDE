@@ -42,4 +42,11 @@ sudo apt-get install -y \
   libwayland-server0 \
   libxkbcommon0
 
-ldconfig
+# Electron's Chromium sandbox needs the SUID helper configured after npm install.
+SANDBOX="node_modules/electron/dist/chrome-sandbox"
+if [ -f "$SANDBOX" ]; then
+  sudo chown root:root "$SANDBOX"
+  sudo chmod 4755 "$SANDBOX"
+fi
+
+sudo ldconfig

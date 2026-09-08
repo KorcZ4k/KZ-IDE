@@ -22,6 +22,7 @@
     "artifactName": "Aurora - Korczak IDE-${version}-${os}-${arch}.${ext}",
     "icon": "build/Aurora-IDE.png",
     "files": ["dist/**/*"],
+    "extraResources": [{ "from": "build/Aurora-IDE.png", "to": "Aurora-IDE.png" }],
     "directories": { "output": "release" },
     "publish": [{ "provider": "github", "owner": "KorcZ4k", "repo": "KZ-IDE", "releaseType": "release" }],
     "linux": {
@@ -29,7 +30,8 @@
       "category": "Development",
       "synopsis": "Aurora - Korczak IDE",
       "description": "Aurora - Korczak IDE é um ambiente de desenvolvimento desktop moderno e leve.",
-      "executableName": "Aurora-Korczak-IDE"
+      "executableName": "Aurora-Korczak-IDE",
+      "icon": "build/Aurora-IDE.png"
     }
   }
 }

@@ -17,13 +17,25 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
       preload: path.join(__dirname, '../preload/index.js')
     }
   });
 
   window.setMenuBarVisibility(false);
-  void window.loadFile(path.join(__dirname, '../renderer/index.html'));
+  window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Aurora] Renderer failed to load (${errorCode}): ${errorDescription} — ${validatedURL}`);
+  });
+  window.webContents.on('render-process-gone', (_event, details) => {
+    console.error(`[Aurora] Renderer process gone: ${details.reason} (exit ${details.exitCode})`);
+  });
+  window.webContents.on('console-message', (_event, details) => {
+    if (details.level >= 2) console.error(`[Aurora renderer] ${details.message}`);
+  });
+
+  void window.loadFile(path.join(__dirname, '../renderer/index.html')).catch(error => {
+    console.error('[Aurora] Could not load renderer:', error);
+  });
 }
 
 app.setName(APP_NAME);

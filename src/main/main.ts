@@ -3,10 +3,14 @@ import path from 'node:path';
 import { registerIpc } from './ipc';
 import { setupAutoUpdater } from './updater';
 
+const APP_NAME = 'Aurora - Korczak IDE';
+
 function createWindow() {
-  const window = new BrowserWindow({ width:1280, height:800, minWidth:900, minHeight:600, title:'KZ-IDE', backgroundColor:'#0b0e12', webPreferences:{ contextIsolation:true, nodeIntegration:false, sandbox:true, preload:path.join(__dirname,'../preload/index.js') } });
+  const window = new BrowserWindow({ width:1280, height:800, minWidth:900, minHeight:600, title:APP_NAME, backgroundColor:'#0b0e12', webPreferences:{ contextIsolation:true, nodeIntegration:false, sandbox:true, preload:path.join(__dirname,'../preload/index.js') } });
   void window.loadFile(path.join(__dirname,'../index.html'));
 }
+
+app.setName(APP_NAME);
 
 app.whenReady().then(() => {
   registerIpc();

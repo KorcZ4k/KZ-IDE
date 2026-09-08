@@ -3,6 +3,7 @@
   "version": "0.5.1",
   "private": true,
   "description": "KZ-IDE — um IDE desktop leve, funcional, tecnológico, moderno e autoral.",
+  "author": "KorcZ4k",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "vite",
@@ -10,7 +11,7 @@
     "test": "npm run build && node --test tests/*.test.mjs",
     "start": "npm run build && electron .",
     "start:codespace": "npm run build && electron . --no-sandbox",
-    "package:linux": "npm run build && electron-builder --linux AppImage"
+    "package:linux": "npm run build && electron-builder --linux AppImage --publish never"
   },
   "dependencies": {
     "monaco-editor": "0.56.0",
@@ -18,7 +19,6 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@electron/rebuild": "3.7.2",
     "@types/node": "26.4.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",

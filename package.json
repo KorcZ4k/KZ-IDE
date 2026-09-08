@@ -2,7 +2,7 @@
   "name": "kz-ide",
   "version": "0.7.0",
   "private": true,
-  "description": "KZ-IDE — um IDE desktop leve, funcional, tecnológico, moderno e autoral.",
+  "description": "Aurora - Korczak IDE — um ambiente de desenvolvimento desktop leve, funcional, tecnológico, moderno e autoral.",
   "author": { "name": "KorcZ4k", "email": "contaparameulove@gmail.com" },
   "main": "dist/main/main.js",
   "scripts": {
@@ -16,8 +16,20 @@
   "dependencies": { "electron-updater": "6.6.2", "monaco-editor": "0.56.0", "react": "19.2.8", "react-dom": "19.2.8", "ws": "8.18.3" },
   "devDependencies": { "@types/node": "26.4.1", "@types/react": "19.2.18", "@types/react-dom": "19.2.7", "@types/ws": "8.18.1", "@vitejs/plugin-react": "6.1.1", "electron": "44.2.0", "electron-builder": "26.0.12", "typescript": "7.0.2", "vite": "8.2.2" },
   "build": {
-    "appId": "com.korcz4k.kzide", "productName": "KZ-IDE", "artifactName": "KZ-IDE-${version}-${os}-${arch}.${ext}", "files": ["dist/**/*"], "directories": { "output": "release" },
+    "appId": "com.korcz4k.aurora",
+    "productName": "Aurora - Korczak IDE",
+    "executableName": "Aurora-Korczak-IDE",
+    "artifactName": "Aurora - Korczak IDE-${version}-${os}-${arch}.${ext}",
+    "icon": "build/Aurora-IDE.png",
+    "files": ["dist/**/*"],
+    "directories": { "output": "release" },
     "publish": [{ "provider": "github", "owner": "KorcZ4k", "repo": "KZ-IDE", "releaseType": "release" }],
-    "linux": { "target": ["deb"], "category": "Development", "synopsis": "IDE desktop da Korczak Technologies", "description": "KZ-IDE é um ambiente de desenvolvimento desktop moderno e leve." }
+    "linux": {
+      "target": ["deb"],
+      "category": "Development",
+      "synopsis": "Aurora - Korczak IDE",
+      "description": "Aurora - Korczak IDE é um ambiente de desenvolvimento desktop moderno e leve.",
+      "executableName": "Aurora-Korczak-IDE"
+    }
   }
 }

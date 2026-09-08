@@ -25,7 +25,9 @@ test('0.9 renderer provides presence, chat, roles and removal controls', () => {
 
 test('0.9 relay is bounded, authenticated, rate-limited and heartbeat protected', () => {
   const relay = read('relay/server.mjs');
-  for (const token of ['maxPayload', 'MAX_CLIENTS', 'MAX_MESSAGES_PER_SECOND', 'room.token', 'peer.role !== \'owner\'', 'Rate limit exceeded', 'ws.ping()', 'TLS_KEY', 'TLS_CERT']) assert.match(relay, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  for (const token of ['maxPayload', 'MAX_CLIENTS', 'MAX_MESSAGES_PER_SECOND', 'room.token', 'Rate limit exceeded', 'ws.ping()', 'TLS_KEY', 'TLS_CERT']) assert.match(relay, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(relay, /role\s*!==\s*['"]owner['"]/);
+  assert.match(relay, /type\s*===\s*['"]kick['"]\s*\|\|\s*message\.type\s*===\s*['"]role['"]/);
 });
 
 test('0.9 keeps Linux packaging DEB-only', () => {

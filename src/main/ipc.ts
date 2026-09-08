@@ -7,6 +7,7 @@ import { loadSettings, saveSettings } from './settings';
 import { searchWorkspace } from './search';
 import { checkForUpdates, downloadUpdate, getUpdateStatus, installUpdate } from './updater';
 import { debugProject, detectProject, diagnostics, runProject, runTests } from './development';
+import { debugCommand, debugSnapshot, setBreakpoint, startNodeDebug } from './debugger';
 import type { KZSettings } from './settings';
 async function workspaceRoot(){const root=(await loadWorkspaceState()).workspace;if(!root)throw new Error('Nenhum workspace aberto.');return root;}
 export function registerIpc(){
@@ -17,5 +18,6 @@ export function registerIpc(){
  ipcMain.handle('git:status',(_e,cwd:string)=>gitStatus(cwd)); ipcMain.handle('git:diff',(_e,cwd:string,f?:string)=>gitDiff(cwd,f)); ipcMain.handle('git:run',(_e,cwd:string,args:string[])=>git(cwd,args));
  ipcMain.handle('search:workspace',(_e,root:string,q:string)=>searchWorkspace(root,q)); ipcMain.handle('settings:get',()=>loadSettings()); ipcMain.handle('settings:save',(_e,p:Partial<KZSettings>)=>saveSettings(p));
  ipcMain.handle('dev:project',async(_e,root:string)=>detectProject(root)); ipcMain.handle('dev:tests',async(_e,root:string,c?:string)=>runTests(root,c)); ipcMain.handle('dev:run',async(_e,root:string,c?:string)=>runProject(root,c)); ipcMain.handle('dev:debug',async(_e,root:string,c?:string)=>debugProject(root,c)); ipcMain.handle('dev:diagnostics',async(_e,root:string)=>diagnostics(root));
+ ipcMain.handle('debug:start',async(_e,root:string,c?:string)=>startNodeDebug(root,c)); ipcMain.handle('debug:breakpoint',async(_e,id:string,file:string,line:number)=>setBreakpoint(id,file,line)); ipcMain.handle('debug:command',async(_e,id:string,c:'continue'|'pause'|'next'|'stepIn'|'stepOut'|'stop')=>debugCommand(id,c)); ipcMain.handle('debug:snapshot',(_e,id:string)=>debugSnapshot(id));
  ipcMain.handle('update:status',()=>getUpdateStatus()); ipcMain.handle('update:check',()=>checkForUpdates()); ipcMain.handle('update:download',()=>downloadUpdate()); ipcMain.handle('update:install',()=>installUpdate());
 }

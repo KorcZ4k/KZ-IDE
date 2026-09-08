@@ -26,12 +26,14 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: Verify Electron entrypoint
         run: test -f dist/main/main.js && test -f dist/preload/index.js && test -f dist/renderer/index.html
-      - name: Package Linux AppImage
+      - name: Package Linux applications
         run: npm run package:linux
-      - name: Upload Linux application
+      - name: Upload Linux applications
         uses: actions/upload-artifact@v4
         with:
           name: kz-ide-linux
-          path: release/*.AppImage
+          path: |
+            release/*.AppImage
+            release/*.deb
           if-no-files-found: error
           retention-days: 14

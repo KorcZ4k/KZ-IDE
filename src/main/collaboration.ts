@@ -30,7 +30,7 @@ const safeFiles = async (dir: string, base = dir, out: FileEntry[] = []): Promis
   } return out;
 };
 const snapshot = async () => ({ files: await safeFiles(root), generatedAt: Date.now() });
-async function applyEdit(rawPath: string, content: string, baseVersion: number, source?: WebSocket, requestId = crypto.randomUUID(), sourceId = clientId) {
+async function applyEdit(rawPath: string, content: string, baseVersion: number, source?: WebSocket, requestId: string = crypto.randomUUID(), sourceId: string = clientId) {
   const filePath = relativeFilePath(rawPath); const target = safePath(filePath); if (!target) throw new Error('Caminho de arquivo inválido.'); if (content.length > 1024 * 1024) throw new Error('Arquivo colaborativo excede 1 MB.');
   const current = versions.get(filePath) ?? 0;
   if (baseVersion !== current) { const payload = { path: filePath, content: await fs.readFile(target, 'utf8').catch(() => ''), version: current, requestId }; emit({ type: 'conflict', payload }); if (source) send(source, { type: 'conflict', payload }); return false; }

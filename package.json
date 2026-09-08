@@ -1,26 +1,27 @@
 {
   "name": "kz-ide",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "KZ-IDE — um IDE desktop leve, funcional, tecnológico, moderno e autoral.",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.main.json && vite build",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "start": "npm run build && electron ."
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "electron": "latest",
-    "monaco-editor": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "vite": "latest"
+    "@vitejs/plugin-react": "6.1.1",
+    "electron": "44.2.0",
+    "monaco-editor": "0.56.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "vite": "8.2.2"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "typescript": "latest"
+    "@types/node": "26.4.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "typescript": "7.0.2"
   }
 }

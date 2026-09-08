@@ -3,6 +3,7 @@ declare global {
 }
 
 let installed = false;
+let checking = false;
 
 function installUpdateButton() {
   if (installed) return true;
@@ -16,7 +17,7 @@ function installUpdateButton() {
   button.title = 'Buscar atualização no GitHub Releases';
   button.textContent = '↻';
   button.dataset.kzUpdate = 'true';
-  button.setAttribute('aria-label', 'Atualizar KZ-IDE');
+  button.setAttribute('aria-label', 'Atualizar Aurora');
 
   const setState = (label: string, title: string) => {
     button.textContent = label;
@@ -24,28 +25,48 @@ function installUpdateButton() {
     button.setAttribute('aria-label', title);
   };
 
+  const reset = (delay = 3000) => window.setTimeout(() => setState('↻', 'Buscar atualização no GitHub Releases'), delay);
+
   button.addEventListener('click', async () => {
+    if (checking) return;
+    checking = true;
     button.disabled = true;
-    setState('…', 'Consultando GitHub Releases');
+    setState('…', 'Buscando a versão mais recente no GitHub Releases');
     try {
-      const status = await window.kz.update.check();
-      if (status.state === 'not-available') {
-        setState('✓', 'KZ-IDE já está atualizado');
-        window.setTimeout(() => setState('↻', 'Buscar atualização no GitHub Releases'), 2500);
-      } else if (status.state === 'disabled') {
-        setState('×', 'Atualizações indisponíveis neste modo');
-      } else if (status.state === 'error') {
-        setState('!', 'Falha ao consultar GitHub Releases');
-        window.setTimeout(() => setState('↻', 'Buscar atualização no GitHub Releases'), 3000);
-      } else {
-        setState('↓', 'Atualização encontrada; o download será iniciado');
+      let status = await window.kz.update.check();
+      if (status.state === 'available') {
+        setState('↓', `Baixando Aurora ${status.version ?? ''}`.trim());
+        status = await window.kz.update.download();
       }
-    } catch {
-      setState('!', 'Falha ao consultar GitHub Releases');
-      window.setTimeout(() => setState('↻', 'Buscar atualização no GitHub Releases'), 3000);
+      if (status.state === 'not-available') {
+        setState('✓', 'Aurora já está na versão mais recente');
+        reset();
+      } else if (status.state === 'downloaded') {
+        setState('↻', 'Atualização pronta — reiniciando Aurora');
+        window.kz.update.install();
+      } else if (status.state === 'downloading' || status.state === 'available') {
+        setState('↓', `Baixando atualização${status.percent == null ? '' : ` — ${Math.round(status.percent)}%`}`);
+      } else if (status.state === 'disabled') {
+        setState('×', 'Atualizações disponíveis apenas no Aurora instalado');
+        reset(4000);
+      } else {
+        setState('!', status.message || 'Falha ao consultar GitHub Releases');
+        reset(4000);
+      }
+    } catch (error) {
+      setState('!', error instanceof Error ? error.message : 'Falha ao atualizar Aurora');
+      reset(4000);
     } finally {
+      checking = false;
       button.disabled = false;
     }
+  });
+
+  window.kz.update.onStatus(status => {
+    if (!checking) return;
+    if (status.state === 'checking') setState('…', 'Buscando a versão mais recente no GitHub Releases');
+    else if (status.state === 'downloading') setState('↓', `Baixando atualização — ${Math.round(status.percent ?? 0)}%`);
+    else if (status.state === 'downloaded') setState('↻', 'Atualização pronta — reiniciando Aurora');
   });
 
   actions.appendChild(button);

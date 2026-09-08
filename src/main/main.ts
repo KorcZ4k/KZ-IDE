@@ -6,12 +6,14 @@ import { setupAutoUpdater } from './updater';
 const APP_NAME = 'Aurora - Korczak IDE';
 
 function createWindow() {
+  const iconPath = path.join(process.resourcesPath, 'Aurora-IDE.png');
   const window = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1000,
     minHeight: 650,
     title: APP_NAME,
+    icon: iconPath,
     backgroundColor: '#07090b',
     autoHideMenuBar: true,
     webPreferences: {

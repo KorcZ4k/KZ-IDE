@@ -138,7 +138,7 @@ function App() {
 function flatten(nodes: FileNode[]): FileNode[] { return nodes.flatMap(n => n.kind === 'folder' ? flatten(n.children ?? []) : [n]); }
 function findNode(nodes: FileNode[], path: string): FileNode | null { for (const n of nodes) { if (n.path === path) return n; if (n.kind === 'folder') { const found = findNode(n.children ?? [], path); if (found) return found; } } return null; }
 
-function FileTree({ nodes, onOpen, depth = 0 }: { nodes: FileNode[]; onOpen: (n: FileNode) => void; depth?: number }) { return <div>{nodes.map(n => <div key={n.path}><button className="tree-item" style={{ paddingLeft: `${10 + depth * 15}px` }} onClick={() => n.kind === 'file' && onOpen(n)}><span className="tree-icon">{n.kind === 'folder' ? '▸' : '•'}</span><span>{n.name}</span></button>{n.kind === 'folder' && <FileTree nodes={n.children ?? []} onOpen={onOpen} depth={depth + 1} />}</div>)}</div>; }
+function FileTree({ nodes, onOpen, depth = 0 }: { nodes: FileNode[]; onOpen: (n: FileNode) => void; depth?: number }) { return <div>{nodes.map(n => <div key={n.path}><button className="tree-item" style={{ paddingLeft: `${10 + depth * 15}px` }} onClick={() => n.kind === 'file' && onOpen(n)}><span className="tree-icon">{n.kind === 'folder' ? '▸' : '•'}</span><span>{n.name}</span></button>{n.kind === 'folder' && <FileTree nodes={n.children ?? []} onOpen={onOpen} depth={depth + 1} />}</div>); }
 
 function MonacoEditor({ file, settings, onChange, onNotice }: { file: OpenFile; settings: KZSettings; onChange: (content: string) => void; onNotice: (s: string) => void }) {
   const ref = useRef<HTMLDivElement>(null); const change = useRef(onChange); change.current = onChange;
@@ -177,5 +177,40 @@ function SettingsDialog({ settings, onChange, onClose }: { settings: KZSettings;
 
 function Welcome({ onOpen, onCreate }: { onOpen: () => void; onCreate: () => void }) { return <div className="welcome"><div className="welcome-mark">KZ</div><h1>KZ-IDE</h1><p>Leve. Tecnológico. Autoral.</p><div className="welcome-actions"><button onClick={onOpen}>Abrir pasta</button><button onClick={onCreate}>Novo arquivo</button></div><div className="shortcuts"><span><b>Ctrl + P</b> Abrir arquivo</span><span><b>Ctrl + Shift + P</b> Comandos</span><span><b>Ctrl + F</b> Pesquisar projeto</span><span><b>Ctrl + `</b> Terminal</span></div></div>; }
 
-monaco.editor.defineTheme('kz-dark', { base: 'vs-dark', inherit: true, rules: [], colors: { 'editor.background': '#0b0e12', 'editor.foreground': '#dbe2ea', 'editorLineNumber.foreground': '#4e5967', 'editorLineNumber.activeForeground': '#aab4c1', 'editorCursor.foreground': '#e5ebf2', 'editor.selectionBackground': '#26313d' } });
+monaco.editor.defineTheme('kz-dark', {
+  base: 'vs-dark',
+  inherit: true,
+  rules: [
+    { token: 'comment', foreground: '666666', fontStyle: 'italic' },
+    { token: 'keyword', foreground: 'E8E8E8' },
+    { token: 'string', foreground: 'AFAFAF' },
+    { token: 'number', foreground: 'C9C9C9' },
+    { token: 'type', foreground: 'DCDCDC' },
+    { token: 'identifier', foreground: 'D6D6D6' },
+    { token: 'delimiter', foreground: '777777' },
+    { token: 'operator', foreground: 'BDBDBD' }
+  ],
+  colors: {
+    'editor.background': '#050505',
+    'editor.foreground': '#E8E8E8',
+    'editorLineNumber.foreground': '#4A4A4A',
+    'editorLineNumber.activeForeground': '#B5B5B5',
+    'editorCursor.foreground': '#F4F4F4',
+    'editor.selectionBackground': '#242424',
+    'editor.inactiveSelectionBackground': '#171717',
+    'editor.lineHighlightBackground': '#0C0C0C',
+    'editorIndentGuide.background1': '#171717',
+    'editorIndentGuide.activeBackground1': '#2A2A2A',
+    'editorWidget.background': '#0D0D0D',
+    'editorWidget.border': '#353535',
+    'editorSuggestWidget.background': '#0D0D0D',
+    'editorSuggestWidget.border': '#353535',
+    'editorHoverWidget.background': '#0D0D0D',
+    'editorHoverWidget.border': '#353535',
+    'editorGutter.background': '#050505',
+    'scrollbarSlider.background': '#29292988',
+    'scrollbarSlider.hoverBackground': '#444444AA',
+    'scrollbarSlider.activeBackground': '#5A5A5AAA'
+  }
+});
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);

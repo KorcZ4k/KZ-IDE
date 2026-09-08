@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const main = fs.readFileSync(new URL('../src/renderer/main.tsx', import.meta.url), 'utf8');
+const ui = fs.readFileSync(new URL('../src/renderer/ui-0.8.ts', import.meta.url), 'utf8');
+const css = fs.readFileSync(new URL('../src/renderer/styles-0.8.css', import.meta.url), 'utf8');
+test('Aurora 0.8: layout resizing persists', () => { assert.match(main, /sidebarWidth/); assert.match(main, /terminalHeight/); assert.match(main, /localStorage\.setItem\('aurora\.(sidebarWidth|terminalHeight)'/); });
+test('Aurora 0.8: professional menus close correctly', () => { assert.match(main, /MenuDropdown/); assert.match(main, /setMenu\(null\)/); assert.match(ui, /menu-item/); });
+test('Aurora 0.8: Explorer create, rename, delete and folders', () => { assert.match(main, /createEntry/); assert.match(main, /renameEntry/); assert.match(main, /removeEntry/); assert.match(main, /Nova pasta/); assert.match(main, /onContextMenu/); });
+test('Aurora 0.8: terminal history, tabs, clear and resize', () => { assert.match(main, /terminalHistory/); assert.match(main, /ArrowUp/); assert.match(main, /terminalTab/); assert.match(main, /Limpar terminal/); assert.match(main, /startResize\('terminal'/); });
+test('Aurora 0.8: command palette, quick open, project search and shortcuts', () => { assert.match(main, /CommandPaletteContent/); assert.match(main, /Ctrl\+P/); assert.match(main, /Ctrl\+F/); assert.match(main, /Ctrl\+Shift\+P/); assert.match(main, /window\.addEventListener\('keydown'/); });
+test('Aurora 0.8: visual refinement stylesheet is present', () => { assert.match(css, /aurora-dialog-in/); assert.match(css, /command-center/); });

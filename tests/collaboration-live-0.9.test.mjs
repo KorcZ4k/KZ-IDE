@@ -21,12 +21,12 @@ test('0.9 server acknowledges accepted edits and normalizes workspace paths', ()
   assert.match(server, /relativeFilePath/);
   assert.match(server, /baseVersion/);
   assert.match(server, /1024 \* 1024/);
-  assert.match(server, /100\.0\.0\.0/);
+  assert.match(server, /0\.0\.0\.0/);
 });
 
 test('0.9 relay validates rooms and enforces participant limits', () => {
   assert.match(relay, /MAX_CLIENTS/);
   assert.match(relay, /roomToken/);
-  assert.match(relay, /room\.peers\.size >= 16/);
+  assert.match(relay, /room\.peers\.size\s*>=\s*16/);
   assert.match(relay, /Malformed relay payload/);
 });

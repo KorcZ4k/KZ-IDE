@@ -8,20 +8,40 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.main.json && vite build",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "start": "npm run build && electron ."
+    "start": "npm run build && electron .",
+    "start:codespace": "npm run build && electron . --no-sandbox",
+    "package:linux": "npm run build && electron-builder --linux AppImage"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "6.1.1",
-    "electron": "44.2.0",
     "monaco-editor": "0.56.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "vite": "8.2.2"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@electron/rebuild": "3.7.2",
     "@types/node": "26.4.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
-    "typescript": "7.0.2"
+    "@vitejs/plugin-react": "6.1.1",
+    "electron": "44.2.0",
+    "electron-builder": "26.0.12",
+    "typescript": "7.0.2",
+    "vite": "8.2.2"
+  },
+  "build": {
+    "appId": "com.korcz4k.kzide",
+    "productName": "KZ-IDE",
+    "files": [
+      "dist/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    }
   }
 }

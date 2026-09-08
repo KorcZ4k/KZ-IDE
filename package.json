@@ -3,7 +3,10 @@
   "version": "0.5.2",
   "private": true,
   "description": "KZ-IDE — um IDE desktop leve, funcional, tecnológico, moderno e autoral.",
-  "author": "KorcZ4k",
+  "author": {
+    "name": "KorcZ4k",
+    "email": "contaparameulove@gmail.com"
+  },
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "vite",

@@ -1,16 +1,18 @@
-export type FileNode = { name: string; path: string; kind: 'file' | 'folder'; children?: FileNode[] };
-export type Diagnostic = { line: number; column: number; message: string; severity: 'error' | 'warning' | 'info' };
-export type GitStatus = { branch: string; clean: boolean; files: { path: string; status: string }[] };
-export type WorkspaceState = { workspace: string | null; recent: string[] };
-export type SearchMatch = { path: string; line: number; text: string };
-export type KZSettings = { fontSize: number; minimap: boolean; wordWrap: 'off' | 'on'; autoSave: boolean; confirmDelete: boolean };
-export type UpdateStatus = { state: 'disabled' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'; version?: string; percent?: number; message?: string };
-export type KZApi = {
-  workspace: { open: () => Promise<string | null>; last: () => Promise<WorkspaceState>; readTree: (root: string) => Promise<FileNode[]> };
-  file: { read: (path: string) => Promise<string>; write: (path: string, content: string) => Promise<void>; create: (path: string, kind: 'file' | 'folder') => Promise<void>; remove: (path: string) => Promise<void>; rename: (oldPath: string, newPath: string) => Promise<void> };
-  terminal: { cwd: () => Promise<string>; run: (command: string, cwd?: string) => Promise<{ stdout: string; stderr: string; code: number | null }> };
-  git: { status: (cwd: string) => Promise<GitStatus>; diff: (cwd: string, file?: string) => Promise<string>; run: (cwd: string, args: string[]) => Promise<{ stdout: string; stderr: string; code: number | null }> };
-  search: { workspace: (root: string, query: string) => Promise<SearchMatch[]> };
-  settings: { get: () => Promise<KZSettings>; save: (patch: Partial<KZSettings>) => Promise<KZSettings> };
-  update: { status: () => Promise<UpdateStatus>; check: () => Promise<UpdateStatus>; download: () => Promise<UpdateStatus>; install: () => void; onStatus: (callback: (status: UpdateStatus) => void) => () => void };
+export type FileNode={name:string;path:string;kind:'file'|'folder';children?:FileNode[]};
+export type Diagnostic={line:number;column:number;message:string;severity:'error'|'warning'|'info';source?:string};
+export type GitStatus={branch:string;clean:boolean;files:{path:string;status:string}[]};
+export type WorkspaceState={workspace:string|null;recent:string[]}; export type SearchMatch={path:string;line:number;text:string};
+export type KZSettings={fontSize:number;minimap:boolean;wordWrap:'off'|'on';autoSave:boolean;confirmDelete:boolean};
+export type UpdateStatus={state:'disabled'|'checking'|'available'|'not-available'|'downloading'|'downloaded'|'error';version?:string;percent?:number;message?:string};
+export type ProjectInfo={root:string;kind:string;packageManager?:string;testCommand?:string;runCommand?:string;debugCommand?:string};
+export type ToolResult={stdout:string;stderr:string;code:number|null};
+export type DevResult=ProjectInfo&{command?:string|null;result:ToolResult};
+export type KZApi={
+ workspace:{open:()=>Promise<string|null>;last:()=>Promise<WorkspaceState>;readTree:(root:string)=>Promise<FileNode[]>};
+ file:{read:(path:string)=>Promise<string>;write:(path:string,content:string)=>Promise<void>;create:(path:string,kind:'file'|'folder')=>Promise<void>;remove:(path:string)=>Promise<void>;rename:(oldPath:string,newPath:string)=>Promise<void>};
+ terminal:{cwd:()=>Promise<string>;run:(command:string,cwd?:string)=>Promise<ToolResult>};
+ git:{status:(cwd:string)=>Promise<GitStatus>;diff:(cwd:string,file?:string)=>Promise<string>;run:(cwd:string,args:string[])=>Promise<ToolResult>};
+ search:{workspace:(root:string,query:string)=>Promise<SearchMatch[]>}; settings:{get:()=>Promise<KZSettings>;save:(patch:Partial<KZSettings>)=>Promise<KZSettings>};
+ dev:{project:(root:string)=>Promise<ProjectInfo>;tests:(root:string,command?:string)=>Promise<DevResult>;run:(root:string,command?:string)=>Promise<DevResult>;debug:(root:string,command?:string)=>Promise<DevResult>;diagnostics:(root:string)=>Promise<Diagnostic[]>};
+ update:{status:()=>Promise<UpdateStatus>;check:()=>Promise<UpdateStatus>;download:()=>Promise<UpdateStatus>;install:()=>void;onStatus:(callback:(status:UpdateStatus)=>void)=>()=>void};
 };

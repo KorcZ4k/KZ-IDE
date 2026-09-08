@@ -11,7 +11,7 @@ export type CollabEvent = { type: 'status' | 'chat' | 'file' | 'presence' | 'cur
 type FileEntry = { path: string; content: string; version?: number };
 type Client = { ws: WebSocket; id: string; nickname: string; role: CollabRole; color: string; connectedAt: number };
 let server: HttpServer | null = null; let wss: WebSocketServer | null = null; let socket: WebSocket | null = null;
-let token = ''; let root = ''; let nickname = 'Aurora User'; let mode: 'host' | 'client' | null = null; let clientId = crypto.randomUUID(); let reconnectTimer: NodeJS.Timeout | null = null;
+let token = ''; let root = ''; let nickname = 'Aurora User'; let mode: 'host' | 'client' | null = null; let clientId: string = crypto.randomUUID(); let reconnectTimer: NodeJS.Timeout | null = null;
 const clients = new Map<string, Client>(); const listeners = new Set<(event: CollabEvent) => void>(); const versions = new Map<string, number>();
 const peerColors = ['#9ec5d8', '#c7a8e8', '#9ed0ad', '#e4b58b', '#d89cae', '#b8c8a0'];
 let status: CollabStatus = { state: 'idle', peers: 0, peerList: [] };

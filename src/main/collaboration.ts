@@ -8,23 +8,13 @@ export type CollabRole = 'owner' | 'editor' | 'viewer';
 export type CollabPeer = { id: string; nickname: string; role: CollabRole; color: string; connectedAt: number };
 export type CollabStatus = { state: 'idle' | 'hosting' | 'connected' | 'error'; url?: string; token?: string; peers: number; nickname?: string; peerList?: CollabPeer[]; message?: string };
 export type CollabEvent = { type: 'status' | 'chat' | 'file' | 'presence' | 'cursor' | 'conflict'; payload: unknown };
-
 type FileEntry = { path: string; content: string; version?: number };
 type Operation = { type: 'edit'; path: string; content: string; baseVersion: number; clientId: string; requestId: string };
 type Client = { ws: WebSocket; id: string; nickname: string; role: CollabRole; color: string; connectedAt: number; versions: Map<string, number> };
-let server: HttpServer | null = null;
-let wss: WebSocketServer | null = null;
-let socket: WebSocket | null = null;
-let token = '';
-let root = '';
-let nickname = 'Aurora User';
-let mode: 'host' | 'client' | null = null;
-let clientId = crypto.randomUUID();
+let server: HttpServer | null = null; let wss: WebSocketServer | null = null; let socket: WebSocket | null = null;
+let token = ''; let root = ''; let nickname = 'Aurora User'; let mode: 'host' | 'client' | null = null; let clientId = crypto.randomUUID();
 let reconnectTimer: NodeJS.Timeout | null = null;
-let reconnectArgs: { workspace: string; url: string; token: string; name: string } | null = null;
-const clients = new Map<string, Client>();
-const listeners = new Set<(event: CollabEvent) => void>();
-const versions = new Map<string, number>();
+const clients = new Map<string, Client>(); const listeners = new Set<(event: CollabEvent) => void>(); const versions = new Map<string, number>();
 const peerColors = ['#9ec5d8', '#c7a8e8', '#9ed0ad', '#e4b58b', '#d89cae', '#b8c8a0'];
 let status: CollabStatus = { state: 'idle', peers: 0, peerList: [] };
 const emit = (event: CollabEvent) => listeners.forEach(listener => listener(event));
@@ -34,108 +24,61 @@ const send = (ws: WebSocket, message: unknown) => { if (ws.readyState === WebSoc
 const broadcast = (message: unknown, except?: WebSocket) => { for (const c of clients.values()) if (c.ws !== except) send(c.ws, message); };
 const safePath = (filePath: string) => { if (!filePath || path.isAbsolute(filePath)) return null; const target = path.resolve(root, filePath); return target.startsWith(path.resolve(root) + path.sep) ? target : null; };
 const safeFiles = async (dir: string, base = dir, out: FileEntry[] = []) => {
-  if (out.length >= 200) return out;
-  let entries: import('node:fs').Dirent[] = [];
-  try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return out; }
-  for (const entry of entries) {
-    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'release') continue;
-    const absolute = path.join(dir, entry.name);
-    if (entry.isDirectory()) await safeFiles(absolute, base, out);
-    else if (entry.isFile()) { try { const stat = await fs.stat(absolute); if (stat.size <= 1024 * 1024) out.push({ path: path.relative(base, absolute).replaceAll(path.sep, '/'), content: await fs.readFile(absolute, 'utf8'), version: versions.get(path.relative(base, absolute).replaceAll(path.sep, '/')) ?? 0 }); } catch {} }
+  if (out.length >= 200) return out; let entries: import('node:fs').Dirent[] = []; try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return out; }
+  for (const entry of entries) { if (['node_modules', '.git', 'dist', 'release'].includes(entry.name)) continue; const absolute = path.join(dir, entry.name);
+    if (entry.isDirectory()) await safeFiles(absolute, base, out); else if (entry.isFile()) { try { const stat = await fs.stat(absolute); const relative = path.relative(base, absolute).replaceAll(path.sep, '/'); if (stat.size <= 1024 * 1024) out.push({ path: relative, content: await fs.readFile(absolute, 'utf8'), version: versions.get(relative) ?? 0 }); } catch {} }
     if (out.length >= 200) break;
-  }
-  return out;
+  } return out;
 };
 const snapshot = async () => ({ files: await safeFiles(root), generatedAt: Date.now() });
-
 async function applyOperation(operation: Operation, source?: WebSocket) {
-  const target = safePath(operation.path);
-  if (!target) throw new Error('Caminho de arquivo inválido.');
-  if (operation.content.length > 1024 * 1024) throw new Error('Arquivo colaborativo excede 1 MB.');
+  const target = safePath(operation.path); if (!target) throw new Error('Caminho de arquivo inválido.'); if (operation.content.length > 1024 * 1024) throw new Error('Arquivo colaborativo excede 1 MB.');
   const current = versions.get(operation.path) ?? 0;
-  if (operation.baseVersion !== current) {
-    emit({ type: 'conflict', payload: { path: operation.path, expected: current, received: operation.baseVersion, requestId: operation.requestId } });
-    if (source) send(source, { type: 'conflict', payload: { path: operation.path, content: await fs.readFile(target, 'utf8').catch(() => ''), version: current, requestId: operation.requestId } });
-    return false;
-  }
-  await fs.mkdir(path.dirname(target), { recursive: true });
-  await fs.writeFile(target, operation.content, 'utf8');
-  const nextVersion = current + 1; versions.set(operation.path, nextVersion);
-  const payload = { path: operation.path, content: operation.content, version: nextVersion, clientId: operation.clientId, requestId: operation.requestId };
-  broadcast({ type: 'edit', payload }, source);
-  emit({ type: 'file', payload });
-  return true;
+  if (operation.baseVersion !== current) { const payload = { path: operation.path, content: await fs.readFile(target, 'utf8').catch(() => ''), version: current, requestId: operation.requestId }; emit({ type: 'conflict', payload }); if (source) send(source, { type: 'conflict', payload }); return false; }
+  await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, operation.content, 'utf8'); const nextVersion = current + 1; versions.set(operation.path, nextVersion);
+  const payload = { path: operation.path, content: operation.content, version: nextVersion, clientId: operation.clientId, requestId: operation.requestId }; broadcast({ type: 'edit', payload }, source); emit({ type: 'file', payload }); return true;
 }
-
 export function onCollabEvent(listener: (event: CollabEvent) => void) { listeners.add(listener); return () => listeners.delete(listener); }
 export function getCollabStatus() { return status; }
-
 export async function hostCollaboration(workspace: string, name = 'Aurora User', port = 0) {
   await stopCollaboration(); root = workspace; nickname = name.trim().slice(0, 64) || 'Aurora User'; token = crypto.randomBytes(24).toString('hex'); mode = 'host'; clientId = crypto.randomUUID();
   server = createServer(); wss = new WebSocketServer({ server, maxPayload: 2 * 1024 * 1024 });
-  wss.on('connection', (ws, request) => {
-    try {
-      const requestUrl = new URL(request.url ?? '/', 'http://localhost');
-      if (requestUrl.searchParams.get('token') !== token) { ws.close(1008, 'Invalid collaboration token'); return; }
-      if (clients.size >= 16) { ws.close(1013, 'Collaboration session full'); return; }
-      const id = crypto.randomUUID(); const client: Client = { ws, id, nickname: (requestUrl.searchParams.get('name') || 'Guest').slice(0, 64), role: 'editor', color: peerColors[clients.size % peerColors.length], connectedAt: Date.now(), versions: new Map() }; clients.set(id, client);
-      updateStatus('hosting');
-      send(ws, { type: 'hello', clientId: id, nickname, workspace: path.basename(root), role: client.role, peers: peers() });
-      broadcast({ type: 'presence', payload: peers() });
-      ws.on('message', async raw => {
-        try {
-          if (raw.length > 2 * 1024 * 1024) return;
-          const message = JSON.parse(raw.toString()) as { type?: string; text?: string; path?: string; content?: string; baseVersion?: number; requestId?: string; role?: CollabRole; cursor?: unknown };
+  wss.on('connection', (ws, request) => { try { const requestUrl = new URL(request.url ?? '/', 'http://localhost'); if (requestUrl.searchParams.get('token') !== token) return ws.close(1008, 'Invalid collaboration token'); if (clients.size >= 16) return ws.close(1013, 'Collaboration session full');
+      const id = crypto.randomUUID(); const client: Client = { ws, id, nickname: (requestUrl.searchParams.get('name') || 'Guest').slice(0, 64), role: 'editor', color: peerColors[clients.size % peerColors.length], connectedAt: Date.now(), versions: new Map() }; clients.set(id, client); updateStatus('hosting'); send(ws, { type: 'hello', clientId: id, nickname, workspace: path.basename(root), role: client.role, peers: peers() }); broadcast({ type: 'presence', payload: peers() });
+      ws.on('message', async raw => { try { if (raw.length > 2 * 1024 * 1024) return; const message = JSON.parse(raw.toString()) as { type?: string; text?: string; path?: string; content?: string; baseVersion?: number; requestId?: string; cursor?: unknown; peerId?: string; role?: CollabRole };
           if (message.type === 'chat' && typeof message.text === 'string' && message.text.trim().length <= 2000) { const payload = { nickname: client.nickname, text: message.text.trim(), at: Date.now() }; emit({ type: 'chat', payload }); broadcast({ type: 'chat', payload }); }
           else if (message.type === 'sync') send(ws, { type: 'snapshot', payload: await snapshot() });
-          else if (message.type === 'edit' && client.role === 'editor' && typeof message.path === 'string' && typeof message.content === 'string' && Number.isInteger(message.baseVersion)) await applyOperation({ type: 'edit', path: message.path, content: message.content, baseVersion: message.baseVersion, clientId: id, requestId: String(message.requestId || crypto.randomUUID()) }, ws);
-          else if (message.type === 'cursor') { const payload = { clientId: id, nickname: client.nickname, color: client.color, cursor: message.cursor }; broadcast({ type: 'cursor', payload }, ws); emit({ type: 'cursor', payload }); }
-          else if (message.type === 'role' && client.role === 'owner' && typeof message.path === 'string') { const target = clients.get(message.path); if (target && (message.role === 'editor' || message.role === 'viewer')) { target.role = message.role; send(target.ws, { type: 'role', role: target.role }); broadcast({ type: 'presence', payload: peers() }); } }
-          else if (message.type === 'kick' && client.role === 'owner' && typeof message.path === 'string') { const target = clients.get(message.path); if (target) { target.ws.close(4000, 'Removed by host'); clients.delete(target.id); } }
-        } catch { send(ws, { type: 'error', message: 'Mensagem colaborativa inválida.' }); }
-      });
-      ws.on('close', () => { clients.delete(id); updateStatus('hosting'); broadcast({ type: 'presence', payload: peers() }); });
-    } catch { ws.close(1011, 'Collaboration error'); }
-  });
+          else if (message.type === 'edit' && client.role === 'editor' && typeof message.path === 'string' && typeof message.content === 'string' && Number.isInteger(message.baseVersion)) await applyOperation({ type:'edit', path:message.path, content:message.content, baseVersion:message.baseVersion, clientId:id, requestId:String(message.requestId || crypto.randomUUID()) }, ws);
+          else if (message.type === 'cursor') { const payload = { clientId:id, nickname:client.nickname, color:client.color, cursor:message.cursor }; broadcast({ type:'cursor', payload }, ws); emit({ type:'cursor', payload }); }
+          else if (message.type === 'role' && typeof message.peerId === 'string' && (message.role === 'editor' || message.role === 'viewer')) { sendRole(client, message.peerId, message.role); }
+          else if (message.type === 'kick' && typeof message.peerId === 'string') kickPeer(client, message.peerId);
+        } catch { send(ws, { type:'error', message:'Mensagem colaborativa inválida.' }); } });
+      ws.on('close', () => { clients.delete(id); updateStatus('hosting'); broadcast({ type:'presence', payload:peers() }); });
+    } catch { ws.close(1011, 'Collaboration error'); } });
   await new Promise<void>((resolve, reject) => { server!.once('error', reject); server!.listen(port, '0.0.0.0', () => resolve()); });
-  const address = server.address(); const actualPort = typeof address === 'object' && address ? address.port : port;
-  const localUrl = `ws://127.0.0.1:${actualPort}`;
-  status = { state: 'hosting', url: localUrl, token, peers: 0, peerList: [{ id: clientId, nickname, role: 'owner', color: peerColors[0], connectedAt: Date.now() }], nickname, message: 'Sessão criada. Para internet, publique um relay WebSocket com TLS (wss://).' };
-  emit({ type: 'status', payload: status }); emit({ type: 'presence', payload: status.peerList }); return status;
+  const address = server.address(); const actualPort = typeof address === 'object' && address ? address.port : port; status = { state:'hosting', url:`ws://127.0.0.1:${actualPort}`, token, peers:0, peerList:[{id:clientId,nickname,role:'owner',color:peerColors[0],connectedAt:Date.now()}], nickname, message:'Sessão criada. Para internet, publique um relay WebSocket com TLS (wss://).' }; emit({type:'status',payload:status}); emit({type:'presence',payload:status.peerList}); return status;
 }
-
+function sendRole(owner: Client, peerId: string, role: 'editor'|'viewer') { if (mode !== 'host') return; const target = clients.get(peerId); if (!target || owner.id === peerId) return; target.role = role; send(target.ws,{type:'role',role}); broadcast({type:'presence',payload:peers()}); }
+function kickPeer(owner: Client, peerId: string) { if (mode !== 'host') return; const target = clients.get(peerId); if (!target || owner.id === peerId) return; target.ws.close(4000,'Removed by host'); clients.delete(peerId); broadcast({type:'presence',payload:peers()}); updateStatus('hosting'); }
 export async function joinCollaboration(workspace: string, url: string, sessionToken: string, name = 'Aurora User') {
-  await stopCollaboration(); root = workspace; nickname = name.trim().slice(0, 64) || 'Aurora User'; token = sessionToken.trim(); mode = 'client'; clientId = crypto.randomUUID();
-  if (!/^wss?:\/\//.test(url)) throw new Error('URL de colaboração inválida. Use ws:// ou wss://.');
-  reconnectArgs = { workspace, url, token, name: nickname };
-  const connect = () => {
-    const endpoint = `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}&name=${encodeURIComponent(nickname)}`; socket = new WebSocket(endpoint, { maxPayload: 2 * 1024 * 1024 });
-    socket.once('open', () => { if (reconnectTimer) clearTimeout(reconnectTimer); reconnectTimer = null; updateStatus('connected', 'Conectado em tempo real.'); socket!.send(JSON.stringify({ type: 'sync' })); });
-    socket.on('message', async raw => {
-      try {
-        const message = JSON.parse(raw.toString()) as { type: string; payload?: any; role?: CollabRole };
-        if (message.type === 'hello') { clientId = String(message.clientId || clientId); emit({ type: 'presence', payload: message.peers || [] }); }
-        else if (message.type === 'chat') emit({ type: 'chat', payload: message.payload });
-        else if (message.type === 'presence') { status = { ...status, peerList: message.payload || [], peers: Array.isArray(message.payload) ? message.payload.length : 0 }; emit({ type: 'presence', payload: message.payload }); }
-        else if (message.type === 'role') emit({ type: 'status', payload: { ...status, message: `Permissão: ${message.role}` } });
-        else if (message.type === 'cursor') emit({ type: 'cursor', payload: message.payload });
-        else if (message.type === 'edit') { const p = message.payload; const target = safePath(p.path); if (target && typeof p.content === 'string' && p.content.length <= 1024 * 1024) { await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, p.content, 'utf8'); versions.set(p.path, Number(p.version) || 0); emit({ type: 'file', payload: p }); } }
-        else if (message.type === 'snapshot' && message.payload?.files) { for (const file of message.payload.files as FileEntry[]) { const target = safePath(file.path); if (!target || file.content.length > 1024 * 1024) continue; await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, file.content, 'utf8'); versions.set(file.path, file.version || 0); } emit({ type: 'file', payload: { count: message.payload.files.length, snapshot: true } }); }
-        else if (message.type === 'conflict') emit({ type: 'conflict', payload: message.payload });
-      } catch { emit({ type: 'status', payload: { ...status, message: 'Mensagem colaborativa ignorada.' } }); }
-    });
-    socket.once('error', () => { if (!reconnectTimer && mode === 'client') reconnectTimer = setTimeout(connect, 2500); });
-    socket.once('close', () => { if (mode === 'client') { updateStatus('idle', 'Conexão perdida. Tentando reconectar…'); if (!reconnectTimer) reconnectTimer = setTimeout(connect, 2500); } });
-  };
-  connect();
-  await new Promise<void>((resolve, reject) => { const timer = setTimeout(() => resolve(), 4000); const check = () => { if (status.state === 'connected') { clearTimeout(timer); resolve(); } else if (status.state === 'error') { clearTimeout(timer); reject(new Error(status.message || 'Não foi possível conectar à sessão.')); } else setTimeout(check, 100); }; check(); });
-  return status;
+  await stopCollaboration(); root = workspace; nickname = name.trim().slice(0,64) || 'Aurora User'; token = sessionToken.trim(); mode = 'client'; clientId = crypto.randomUUID(); if (!/^wss?:\/\//.test(url)) throw new Error('URL de colaboração inválida. Use ws:// ou wss://.');
+  const connect = () => { const endpoint = `${url}${url.includes('?')?'&':'?'}token=${encodeURIComponent(token)}&name=${encodeURIComponent(nickname)}`; socket = new WebSocket(endpoint, undefined, { maxPayload: 2 * 1024 * 1024 });
+    socket.once('open', () => { if (reconnectTimer) clearTimeout(reconnectTimer); reconnectTimer = null; updateStatus('connected','Conectado em tempo real.'); socket!.send(JSON.stringify({type:'sync'})); });
+    socket.on('message', async raw => { try { const message = JSON.parse(raw.toString()) as {type:string;payload?:any;role?:CollabRole};
+      if (message.type==='hello') { clientId=String(message.payload?.clientId || (message as any).clientId || clientId); emit({type:'presence',payload:(message as any).peers||[]}); }
+      else if (message.type==='chat') emit({type:'chat',payload:message.payload}); else if (message.type==='presence') { status={...status,peerList:message.payload||[],peers:Array.isArray(message.payload)?message.payload.length:0}; emit({type:'presence',payload:message.payload}); }
+      else if (message.type==='role') emit({type:'status',payload:{...status,message:`Permissão: ${message.role}`}}); else if (message.type==='cursor') emit({type:'cursor',payload:message.payload});
+      else if (message.type==='edit') { const p=message.payload; const target=safePath(p.path); if(target&&typeof p.content==='string'&&p.content.length<=1024*1024){await fs.mkdir(path.dirname(target),{recursive:true});await fs.writeFile(target,p.content,'utf8');versions.set(p.path,Number(p.version)||0);emit({type:'file',payload:p});} }
+      else if (message.type==='snapshot'&&message.payload?.files){for(const file of message.payload.files as FileEntry[]){const target=safePath(file.path);if(!target||file.content.length>1024*1024)continue;await fs.mkdir(path.dirname(target),{recursive:true});await fs.writeFile(target,file.content,'utf8');versions.set(file.path,file.version||0);}emit({type:'file',payload:{count:message.payload.files.length,snapshot:true}});}
+      else if(message.type==='conflict')emit({type:'conflict',payload:message.payload});
+    } catch { emit({type:'status',payload:{...status,message:'Mensagem colaborativa ignorada.'}}); } });
+    socket.once('error',()=>{if(!reconnectTimer&&mode==='client')reconnectTimer=setTimeout(connect,2500);}); socket.once('close',()=>{if(mode==='client'){updateStatus('idle','Conexão perdida. Tentando reconectar…');if(!reconnectTimer)reconnectTimer=setTimeout(connect,2500);}});
+  }; connect(); await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,4000);const check=()=>{if(status.state==='connected'){clearTimeout(timer);resolve();}else setTimeout(check,100);};check();}); return status;
 }
-
-export async function syncCollaboration() { if (mode === 'host') { const data = await snapshot(); broadcast({ type: 'snapshot', payload: data }); emit({ type: 'file', payload: { count: data.files.length, sent: true } }); return data.files.length; } if (socket?.readyState === WebSocket.OPEN) { socket.send(JSON.stringify({ type: 'sync' })); return 1; } throw new Error('Nenhuma sessão de colaboração ativa.'); }
-export async function sendCollabEdit(filePath: string, content: string, baseVersion = versions.get(filePath) ?? 0) { const payload = { type: 'edit', path: filePath, content, baseVersion, requestId: crypto.randomUUID() }; if (mode === 'host') { await applyOperation({ ...payload, clientId }); return; } if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(payload)); else throw new Error('Nenhuma sessão conectada.'); }
-export function sendCollabCursor(cursor: unknown) { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'cursor', cursor })); else if (mode === 'host') { const payload = { clientId, nickname, color: peerColors[0], cursor }; broadcast({ type: 'cursor', payload }); emit({ type: 'cursor', payload }); } }
-export function setCollabRole(peerId: string, role: 'editor' | 'viewer') { if (mode === 'host') { const target = clients.get(peerId); if (target) { target.role = role; send(target.ws, { type: 'role', role }); broadcast({ type: 'presence', payload: peers() }); } } }
-export function kickCollabPeer(peerId: string) { if (mode === 'host') { const target = clients.get(peerId); if (target) { target.ws.close(4000, 'Removed by host'); clients.delete(peerId); broadcast({ type: 'presence', payload: peers() }); updateStatus('hosting'); } } }
-export function sendCollabChat(text: string) { const clean = text.trim().slice(0, 2000); if (!clean) return; if (socket?.readyState === WebSocket.OPEN) { socket.send(JSON.stringify({ type: 'chat', text: clean })); return; } if (mode === 'host') { const payload = { nickname, text: clean, at: Date.now() }; emit({ type: 'chat', payload }); broadcast({ type: 'chat', payload }); return; } throw new Error('Nenhuma sessão conectada.'); }
-export async function stopCollaboration() { if (reconnectTimer) clearTimeout(reconnectTimer); reconnectTimer = null; reconnectArgs = null; socket?.close(); socket = null; for (const client of clients.values()) client.ws.close(); clients.clear(); await new Promise<void>(resolve => { if (!server) return resolve(); server.close(() => resolve()); }); wss?.close(); wss = null; server = null; mode = null; token = ''; root = ''; versions.clear(); status = { state: 'idle', peers: 0, peerList: [] }; emit({ type: 'status', payload: status }); }
+export async function syncCollaboration(){if(mode==='host'){const data=await snapshot();broadcast({type:'snapshot',payload:data});emit({type:'file',payload:{count:data.files.length,sent:true}});return data.files.length;}if(socket?.readyState===WebSocket.OPEN){socket.send(JSON.stringify({type:'sync'}));return 1;}throw new Error('Nenhuma sessão de colaboração ativa.');}
+export async function sendCollabEdit(filePath:string,content:string,baseVersion=versions.get(filePath)??0){const payload={type:'edit',path:filePath,content,baseVersion,requestId:crypto.randomUUID()};if(mode==='host'){await applyOperation({...payload,clientId});return;}if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify(payload));else throw new Error('Nenhuma sessão conectada.');}
+export function sendCollabCursor(cursor:unknown){if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'cursor',cursor}));else if(mode==='host'){const payload={clientId,nickname,color:peerColors[0],cursor};broadcast({type:'cursor',payload});emit({type:'cursor',payload});}}
+export function setCollabRole(peerId:string,role:'editor'|'viewer'){if(mode==='host'){const target=clients.get(peerId);if(target){target.role=role;send(target.ws,{type:'role',role});broadcast({type:'presence',payload:peers()});}}}
+export function kickCollabPeer(peerId:string){if(mode==='host')kickPeer({id:clientId} as Client,peerId);}
+export function sendCollabChat(text:string){const clean=text.trim().slice(0,2000);if(!clean)return;if(socket?.readyState===WebSocket.OPEN){socket.send(JSON.stringify({type:'chat',text:clean}));return;}if(mode==='host'){const payload={nickname,text:clean,at:Date.now()};emit({type:'chat',payload});broadcast({type:'chat',payload});return;}throw new Error('Nenhuma sessão conectada.');}
+export async function stopCollaboration(){if(reconnectTimer)clearTimeout(reconnectTimer);reconnectTimer=null;socket?.close();socket=null;for(const client of clients.values())client.ws.close();clients.clear();await new Promise<void>(resolve=>{if(!server)return resolve();server.close(()=>resolve());});wss?.close();wss=null;server=null;mode=null;token='';root='';versions.clear();status={state:'idle',peers:0,peerList:[]};emit({type:'status',payload:status});}

@@ -11,7 +11,8 @@
     "test": "npm run build && node --test tests/*.test.mjs",
     "start": "npm run build && electron .",
     "start:codespace": "npm run build && electron . --no-sandbox",
-    "package:linux": "npm run build && electron-builder --linux deb --publish never"
+    "package:linux": "npm run build && electron-builder --linux deb --publish never",
+    "relay": "node relay/server.mjs"
   },
   "dependencies": { "electron-updater": "6.6.2", "monaco-editor": "0.56.0", "react": "19.2.8", "react-dom": "19.2.8", "ws": "8.18.3" },
   "devDependencies": { "@types/node": "26.4.1", "@types/react": "19.2.18", "@types/react-dom": "19.2.7", "@types/ws": "8.18.1", "@vitejs/plugin-react": "6.1.1", "electron": "44.2.0", "electron-builder": "26.0.12", "typescript": "7.0.2", "vite": "8.2.2" },
@@ -23,7 +24,6 @@
     "icon": "build/Aurora-IDE.png",
     "files": ["dist/**/*"],
     "extraResources": [{ "from": "build/Aurora-IDE.png", "to": "Aurora-IDE.png" }],
-    "directories": { "output": "release" },
     "publish": [{ "provider": "github", "owner": "KorcZ4k", "repo": "KZ-IDE", "releaseType": "release" }],
     "linux": {
       "target": ["deb"],

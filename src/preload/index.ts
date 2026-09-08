@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { KZApi } from '../shared/api';
-const iconPath=()=>process.env.NODE_ENV==='production'?path.join(process.resourcesPath,'Aurora-IDE.png'):path.join(process.cwd(),'build','Aurora-IDE.png');
+const iconPath=()=>process.defaultApp?path.join(process.cwd(),'build','Aurora-IDE.png'):path.join(process.resourcesPath,'Aurora-IDE.png');
 const api:KZApi={
  workspace:{open:()=>ipcRenderer.invoke('workspace:open'),last:()=>ipcRenderer.invoke('workspace:last'),readTree:root=>ipcRenderer.invoke('workspace:tree',root)},
  file:{read:p=>ipcRenderer.invoke('file:read',p),write:(p,c)=>ipcRenderer.invoke('file:write',p,c),create:(p,k)=>ipcRenderer.invoke('file:create',p,k),remove:p=>ipcRenderer.invoke('file:remove',p),rename:(a,b)=>ipcRenderer.invoke('file:rename',a,b)},

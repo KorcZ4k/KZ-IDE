@@ -5,15 +5,20 @@ import { setupAutoUpdater } from './updater';
 
 const APP_NAME = 'Aurora - Korczak IDE';
 
+function resolveAppIcon() {
+  const packaged = path.join(process.resourcesPath, 'Aurora-IDE.png');
+  const development = path.join(app.getAppPath(), 'build', 'Aurora-IDE.png');
+  return app.isPackaged ? packaged : development;
+}
+
 function createWindow() {
-  const iconPath = path.join(process.resourcesPath, 'Aurora-IDE.png');
   const window = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1000,
     minHeight: 650,
     title: APP_NAME,
-    icon: iconPath,
+    icon: resolveAppIcon(),
     backgroundColor: '#07090b',
     autoHideMenuBar: true,
     webPreferences: {
@@ -31,8 +36,8 @@ function createWindow() {
   window.webContents.on('render-process-gone', (_event, details) => {
     console.error(`[Aurora] Renderer process gone: ${details.reason} (exit ${details.exitCode})`);
   });
-  window.webContents.on('console-message', (_event, details) => {
-    if (details.level >= 2) console.error(`[Aurora renderer] ${details.message}`);
+  window.webContents.on('console-message', (_event, level, message, _line, _sourceId) => {
+    if (level >= 2) console.error(`[Aurora renderer] ${message}`);
   });
 
   void window.loadFile(path.join(__dirname, '../renderer/index.html')).catch(error => {

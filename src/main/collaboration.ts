@@ -3,7 +3,6 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
-import { readTree } from './filesystem';
 
 export type CollabStatus = { state: 'idle' | 'hosting' | 'connected' | 'error'; url?: string; token?: string; peers: number; nickname?: string; message?: string };
 export type CollabEvent = { type: 'status' | 'chat' | 'file'; payload: unknown };
@@ -31,9 +30,7 @@ const safeFiles = async (dir: string, base = dir, out: Array<{ path: string; con
     if (entry.isDirectory()) await safeFiles(absolute, base, out);
     else if (entry.isFile()) {
       const stat = await fs.stat(absolute);
-      if (stat.size <= 1024 * 1024) {
-        try { out.push({ path: path.relative(base, absolute).replaceAll(path.sep, '/'), content: await fs.readFile(absolute, 'utf8') }); } catch { /* binary/locked file */ }
-      }
+      if (stat.size <= 1024 * 1024) { try { out.push({ path: path.relative(base, absolute).replaceAll(path.sep, '/'), content: await fs.readFile(absolute, 'utf8') }); } catch { /* binary/locked */ } }
     }
     if (out.length >= 200) break;
   }
@@ -65,7 +62,7 @@ export async function hostCollaboration(workspace: string, name = 'Aurora User',
   await new Promise<void>((resolve, reject) => { server!.once('error', reject); server!.listen(port, '0.0.0.0', () => resolve()); });
   const address = server.address(); const actualPort = typeof address === 'object' && address ? address.port : port;
   const localUrl = `ws://127.0.0.1:${actualPort}`;
-  setStatus({ state: 'hosting', url: localUrl, token, peers: 0, nickname, message: 'Sessão criada. Para colaboração externa, encaminhe a porta ou use um relay WebSocket.' });
+  setStatus({ state: 'hosting', url: localUrl, token, peers: 0, nickname, message: 'Sessão criada. Para internet, use wss:// através de um relay/proxy WebSocket.' });
   return status;
 }
 
@@ -74,21 +71,18 @@ export async function joinCollaboration(workspace: string, url: string, sessionT
   if (!/^wss?:\/\//.test(url)) throw new Error('URL de colaboração inválida. Use ws:// ou wss://.');
   const endpoint = `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}&name=${encodeURIComponent(nickname)}`;
   socket = new WebSocket(endpoint);
-  await new Promise<void>((resolve, reject) => {
-    socket!.once('open', () => { setStatus({ state: 'connected', url, peers: 1, nickname }); resolve(); });
-    socket!.once('error', () => reject(new Error('Não foi possível conectar à sessão.')));
-  });
+  await new Promise<void>((resolve, reject) => { socket!.once('open', () => { setStatus({ state: 'connected', url, peers: 1, nickname }); resolve(); }); socket!.once('error', () => reject(new Error('Não foi possível conectar à sessão.'))); });
   socket.on('message', async raw => {
     try {
-      const message = JSON.parse(raw.toString()) as { type: string; payload?: { nickname: string; text: string; at: number }; snapshot?: { files: Array<{ path: string; content: string }> } };
-      if (message.type === 'chat' && message.payload) emit({ type: 'chat', payload: message.payload });
-      if (message.type === 'snapshot' && message.snapshot) {
-        for (const file of message.snapshot.files) {
+      const message = JSON.parse(raw.toString()) as { type: string; payload?: { nickname: string; text: string; at: number } | { files: Array<{ path: string; content: string }> } };
+      if (message.type === 'chat' && message.payload && 'text' in message.payload) emit({ type: 'chat', payload: message.payload });
+      if (message.type === 'snapshot' && message.payload && 'files' in message.payload) {
+        for (const file of message.payload.files) {
           const target = path.resolve(root, file.path);
           if (!target.startsWith(path.resolve(root) + path.sep)) continue;
           await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, file.content, 'utf8');
         }
-        emit({ type: 'file', payload: { count: message.snapshot.files.length } });
+        emit({ type: 'file', payload: { count: message.payload.files.length } });
       }
     } catch { /* ignore malformed data */ }
   });
@@ -101,6 +95,5 @@ export async function syncCollaboration() {
   if (socket?.readyState === WebSocket.OPEN) { socket.send(JSON.stringify({ type: 'sync' })); return 1; }
   throw new Error('Nenhuma sessão de colaboração ativa.');
 }
-export function sendCollabChat(text: string) { if (!socket || socket.readyState !== WebSocket.OPEN) { if (mode === 'host') { const payload = { nickname, text: text.trim(), at: Date.now() }; emit({ type: 'chat', payload }); broadcast({ type: 'chat', payload }); return; } throw new Error('Nenhuma sessão conectada.'); } socket.send(JSON.stringify({ type: 'chat', text })); }
+export function sendCollabChat(text: string) { const clean = text.trim(); if (!clean) return; if (!socket || socket.readyState !== WebSocket.OPEN) { if (mode === 'host') { const payload = { nickname, text: clean, at: Date.now() }; emit({ type: 'chat', payload }); broadcast({ type: 'chat', payload }); return; } throw new Error('Nenhuma sessão conectada.'); } socket.send(JSON.stringify({ type: 'chat', text: clean })); }
 export async function stopCollaboration() { socket?.close(); socket = null; for (const client of clients) client.ws.close(); clients.clear(); await new Promise<void>(resolve => { if (!server) return resolve(); server.close(() => resolve()); }); wss?.close(); wss = null; server = null; mode = null; token = ''; root = ''; setStatus({ state: 'idle', peers: 0 }); }
-export const collaborationTree = async (workspace: string) => readTree(workspace);

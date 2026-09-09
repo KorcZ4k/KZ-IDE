@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -22,7 +24,21 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build Aurora
         run: npm run build
+      - name: Create version tag
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          if ! git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" -m "Aurora ${VERSION}" "${GITHUB_SHA}"
+            git push origin "${TAG}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
       - name: Build and publish Linux DEB release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI_COMMIT_TAG: ${{ steps.version.outputs.tag }}
         run: npx electron-builder --linux deb --publish always

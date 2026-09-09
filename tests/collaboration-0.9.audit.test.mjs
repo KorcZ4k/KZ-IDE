@@ -33,7 +33,7 @@ test('0.9 relay is bounded, authenticated, rate-limited and heartbeat protected'
 test('0.9 keeps Linux packaging DEB-only', () => {
   const pkg = JSON.parse(read('package.json'));
   assert.deepEqual(pkg.build.linux.target, ['deb']);
-  assert.equal(pkg.version, '0.9.0');
+  assert.equal(pkg.version, '0.9.1');
 });
 
 test('0.9 CI performs build, tests, entrypoint verification and DEB packaging', () => {

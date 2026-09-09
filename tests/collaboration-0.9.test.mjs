@@ -35,7 +35,7 @@ test('0.9 renderer loads the collaboration layer', () => {
 
 test('0.9 keeps DEB packaging as the Linux target', () => {
   const pkg = JSON.parse(read('package.json'));
-  assert.equal(pkg.version, '0.9.0');
+  assert.equal(pkg.version, '0.9.1');
   assert.deepEqual(pkg.build.linux.target, ['deb']);
   assert.equal(pkg.build.productName, 'Aurora - Korczak IDE');
 });
